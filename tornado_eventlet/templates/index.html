@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>资源抓取器</title>
+		<link rel="stylesheet" type="text/css" href="/public/bootstrap/css/bootstrap.min.css">
+		<style type="text/css">
+			.blog-list li {height: 20px;line-height:20px;overflow-x: auto;}
+			.blog-list li span {display:inline-block;height: 20px;}
+			.blog-list li>div {display: none;}
+		</style>
+		<script type="text/javascript" src="/public/js/jquery.js"></script>
+		<script type="text/javascript" src="/public/bootstrap/js/bootstrap.min.js"></script>
+		<script type="text/javascript" src="/public/js/index.js"></script>
+	</head>
+	<body>
+		<div class="container">
+			<h1><a href="http://www.cnblogs.com/" style="text-decoration: none;">博客园</a>资源抓取器 <small>beta</small></h1>
+			<form class="form-horizontal">
+				<div class="control-group">
+					<label for="url" class="control-label">网址</label>
+					<div class="controls">
+						<input id="url" name="url" type="text" class="m-wrap" value="http://www.cnblogs.com/" readonly="readonly" />
+					</div>
+				</div>
+				<div class="control-group">
+					<label for="lang" class="control-label">编程语言</label>
+					<div class="controls">
+						<select id="lang" name="lang">
+							<option value="java">Java</option>
+							<option value="cpp">C++</option>
+							<option value="php">PHP</option>
+							<option value="delphi">Delphi</option>
+							<option value="python">Python</option>
+							<option value="ruby">Ruby</option>
+							<option value="c">C</option>
+							<option value="erlang">Erlang</option>
+							<option value="verilog">Verilog</option>
+							<option value="web">Html/Css</option>
+							<option selected="selected" value="javascript">JavaScript</option>
+							<option value="jquery">jQuery</option>
+							<option value="html5">HTML5</option>
+						</select>
+					</div>
+				</div>
+				<div class="control-group">
+					<label for="kw" class="control-label">关键字</label>
+					<div class="controls">
+						<input id="kw" name="kw" type="text" class="m-wrap" />
+					</div>
+				</div>
+				<div class="form-actions">
+					<button type="submit" class="btn btn-primary">搜索</button>
+					<button type="button" class="btn btn-default">重置条件</button>
+				</div>
+			</form>
+		</div>
+	</body>
+</html>
