@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title>{{title}}</title>
+		<link rel="stylesheet" href="/stylesheets/style.css">
+	</head>
+	<body>
+		<div class="contacts">
+			<p class="title">联系人</p>
+			<ul id="contacts"></ul>
+		</div>
+		<div class="window">
+			<div class="winwrapper">
+				<div class="title"></div>
+				<div class="message"></div>
+				<textarea class="input"></textarea>
+				<div class="btns"><a href="#" class="go">发送</a><a href='#' class="trigger">▼</a></div>
+			</div>
+		</div>
+		<div class="message">
+			<p class="user"></p>
+			<p class="content"></p>
+			<p class="fail"><a href="#">发送失败</a></p>
+		</div>
+		<div id="trigger-menu">
+			<ul>
+				<li data-type="enter">按 Enter 键发送消息</li>
+				<li data-type="c-enter">按 Ctrl + Enter 键发送消息</li>
+			</ul>
+		</div>
+		<script type="text/javascript" src="/javascripts/jquery.js"></script>
+		<script type="text/javascript">
+			var currentUser = {{self}};
+			var friends = {{contacts}};
+		</script>
+		<script type="text/javascript" src="/javascripts/chat.js"></script>
+		<script type="text/javascript" src="/javascripts/index.js"></script>
+	</body>
+</html>

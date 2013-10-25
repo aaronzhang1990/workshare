@@ -1,0 +1,7 @@
+extends layout
+block cs
+  link(rel="stylesheet", type="text/css", href="/stylesheets/index.css")
+  - if (haveUser)
+    script.
+      var oe = {chat: {currentUser: !{user}}};
+  script(type="text/javascript", src="/javascripts/index-ext.js")

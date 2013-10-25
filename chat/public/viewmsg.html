@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>查看系统目前消息缓存</title>
+    <script type="text/javascript" src="javascripts/jquery.js"></script>
+    <script type="text/javascript">
+
+        $(function(){
+            var msgBody = $("#msg-body");
+            function updateMsg() {
+                $.getJSON('/msg/view', function(data){
+                    if(data.length) {
+                        var doc = document.createDocumentFragment(), tmp;
+                        $.each(data, function(msg){
+                            tmp = document.createElement('tr');
+                            tmp.innerHTML = '<td>' + msg.senderId + '</td><td>' + msg.receiverId + '</td><td>' + msg.text + '</td>';
+                            doc.appendChild(tmp);
+                        });
+                        msgBody.append(doc);
+                    }
+
+                    setTimeout(updateMsg, 1000);
+                });
+            }
+            updateMsg();
+        });
+    </script>
+</head>
+<body>
+    <table>
+        <thead>
+            <tr>
+                <th>发送者</th>
+                <th>接受者</th>
+                <th>消息</th>
+            </tr>
+        </thead>
+        <tbody id="msg-body">
+
+        </tbody>
+    </table>
+</body>
+</html>
