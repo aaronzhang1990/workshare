@@ -3,34 +3,144 @@
 	<head>
 		<meta charset="utf-8">
 		<link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
-		<link href="lib/codemirror.css" rel="stylesheet">
-		
+		<link href="codemirror/codemirror.css" rel="stylesheet">
 		<script type="text/javascript" src="jquery-1.8.3.min.js"></script>
 		<script type="text/javascript" src="bootstrap/js/bootstrap.min.js"></script>
-		<script type="text/javascript" src="lib/codemirror.js"></script>
+		<script type="text/javascript" src="codemirror/codemirror.js"></script>
+		<!-- add javascript mode plugin and other addons -->
+		<script type="text/javascript" src="codemirror/mode/javascript/javascript.js"></script>
 		<script type="text/javascript">
 			$(function(){
 				var cm = CodeMirror.fromTextArea(document.getElementById('cm-target'), {
-					mode: 'javascript'
+					indentUnit: 4,
+					tabSize: 4,
+					lineNumbers: true,
+					fixedGutter: true
+				});
+				cm.on('change', function(me, changeObj){
+					$('#highliTarget').text(me.doc.getValue());
 				});
 				$('[data-action]').click(function(){
 					var action = this.getAttribute('data-action');
 					$('#highliTarget').text(cm.doc[action]());
-				})
+				});
+				var loadCache = {}
+				$("#program-lang").change(function(){
+					var lang = this.value, applyChange;
+					applyChange = function(){
+						cm.setOption('mode', lang);
+						loadCache[lang] = true;
+					};
+					if(loadCache[lang]) { applyChange(); }
+					else {
+						$.getScript('codemirror/mode/' + lang + '/' + lang + '.js', applyChange);
+					}
+					
+				});
+				$("#program-theme").change(function(){
+					var theme = this.value, applyChange;
+					applyChange = function(){
+						cm.setOption('theme', theme);
+						loadCache[theme] = true;
+					};
+					if(loadCache[theme]) {
+						applyChange();
+					} else {
+						loadCss('codemirror/theme/' + theme + '.css', applyChange);
+					}
+				});
 
 			})
+			function loadCss(url, cb) {
+				var link = document.createElement('link'), isExecute = false;
+				link.type = 'text/css';
+				link.rel = 'stylesheet';
+				link.href = url;
+				link.onload = function(){
+					link.onload = link.onreadystatechange = null;
+					cb();
+				};
+				link.onreadystatechange = function(){
+					if(link.readyState = 'complete' && !isExecute) {
+						link.onload = link.onreadystatechange = null;
+						cb();
+					}
+				};
+				$('html>head').append(link);
+			}
 		</script>
 	</head>
 	<body>
 		<div class="container">
 			<div class="row">
 				<div class="span6">
+					<div class="control-group">
+						<label class="control-label" for="program-lang">编程语言：</label>
+						<div class="controls">
+							<select id="program-lang">
+								<option>-- default --</option>
+								<option value="coffeescript">coffeescript</option>
+								<option value="css">css</option>
+								<option value="javascript">javascript</option>
+								<option value="less">less</option>
+								<option value="pascal">pascal</option>
+								<option value="perl">perl</option>
+								<option value="php">php</option>
+								<option value="pig">pig</option>
+								<option value="python">python</option>
+								<option value="ruby">ruby</option>
+								<option value="shell">shell</option>
+								<option value="sql">sql</option>
+								<option value="tcl">tcl</option>
+								<option value="vb">vb</option>
+								<option value="vbscript">vbscript</option>
+								<option value="xml">xml</option>
+							</select>
+						</div>
+					</div>
+					<div class="control-group">
+						<label class="control-label" for="program-theme">主题：</label>
+						<div class="controls">
+							<select id="program-theme">
+								<option>-- default --</option>
+								<option value="3024-day">3024-day</option>
+								<option value="3024-night">3024-night</option>
+								<option value="ambiance-mobile">ambiance-mobile</option>
+								<option value="ambiance">ambiance</option>
+								<option value="base16-dark">base16-dark</option>
+								<option value="base16-light">base16-light</option>
+								<option value="blackboard">blackboard</option>
+								<option value="cobalt">cobalt</option>
+								<option value="eclipse">eclipse</option>
+								<option value="elegant">elegant</option>
+								<option value="erlang-dark">erlang-dark</option>
+								<option value="lesser-dark">lesser-dark</option>
+								<option value="mbo">mbo</option>
+								<option value="midnight">midnight</option>
+								<option value="monokai">monokai</option>
+								<option value="neat">neat</option>
+								<option value="night">night</option>
+								<option value="paraiso-dark">paraiso-dark</option>
+								<option value="paraiso-light">paraiso-light</option>
+								<option value="rubyblue">rubyblue</option>
+								<option value="solarized">solarized</option>
+								<option value="the-matrix">the-matrix</option>
+								<option value="tomorrow-night-eighties">tomorrow-night-eighties</option>
+								<option value="twilight">twilight</option>
+								<option value="vibrant-ink">vibrant-ink</option>
+								<option value="xq-dark">xq-dark</option>
+								<option value="xq-light">xq-light</option>
+							</select>
+						</div>
+					</div>
+						
 					<textarea id="cm-target"></textarea>
-					<p class="well well-small">
+					<!-- <p class="well well-small" style="margin-top:10px;">
 						<button class="btn btn-info" data-action="getValue">getCode</button>
-					</p>
+					</p> -->
 				</div>
-				<div class="span6 offset6">
+				<div class="span6">
+					<h1>代码：</h1>
 					<pre id="highliTarget"></pre>
 				</div>
 			</div>
