@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <script type="text/javascript" src="/static/lib/swfupload.js"></script>
+        <script type="text/javascript">
+        function printArgs(name) {
+            var print = function(){
+                console.log(name, arguments);
+                return false;
+            };
+            return print
+        }
+        onload = function () {
+            var su = new SWFUpload({
+                flash_url: '/static/lib/swfupload.swf',
+                //upload_url: '',
+                debug: false,
+                file_post_name : "file",
+                //control html element
+                button_placeholder_id: 't',
+                button_width : 61,
+                button_height : 22,
+                button_text : 'upload',
+                button_text_left_padding : 3,
+                button_text_top_padding : 2,
+                button_action : SWFUpload.BUTTON_ACTION.SELECT_FILES,
+                button_disabled : false,
+                button_cursor : SWFUpload.CURSOR.HAND,
+                //event interfaces
+                swfupload_loaded_handler : printArgs('swfupload_loaded_handler'),
+                file_queued_handler : printArgs('file_queued_handler'),
+                file_queue_error_handler : printArgs('file_queue_error_handler'),
+                file_dialog_complete_handler : printArgs('file_dialog_complete_handler'),
+                
+                upload_start_handler : function(){
+                    console.log(su, su.getStats());
+                },
+                upload_progress_handler : printArgs('upload_progress_handler'),
+                upload_error_handler : printArgs('upload_error_handler'),
+                upload_success_handler : printArgs('upload_success_handler'),
+                upload_complete_handler : printArgs('upload_complete_handler')
+            });
+            
+            document.getElementById('u').addEventListener('click', function(){
+                su.startUpload();
+            });
+        }
+        </script>
+    </head>
+    <body>
+        <form>
+            <div id='t'></div>
+            <a href="#" id='u'>上传</a>
+        </form>
+    </body>
+</html>
