@@ -14,7 +14,7 @@
         onload = function () {
             var su = new SWFUpload({
                 flash_url: '/static/lib/swfupload.swf',
-                //upload_url: '',
+                upload_url: '/upload/',
                 debug: false,
                 file_post_name : "file",
                 //control html element
@@ -38,7 +38,10 @@
                 },
                 upload_progress_handler : printArgs('upload_progress_handler'),
                 upload_error_handler : printArgs('upload_error_handler'),
-                upload_success_handler : printArgs('upload_success_handler'),
+                upload_success_handler : function(f, resp){
+                    resp = JSON.parse(resp);
+                    alert(resp.msg);
+                },
                 upload_complete_handler : printArgs('upload_complete_handler')
             });
             
@@ -51,7 +54,7 @@
     <body>
         <form>
             <div id='t'></div>
-            <a href="#" id='u'>上传</a>
+            <a href="javascript:void(0);" id='u'>上传</a>
         </form>
     </body>
 </html>
