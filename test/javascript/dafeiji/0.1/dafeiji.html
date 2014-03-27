@@ -1,0 +1,200 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>打飞机</title>
+  </head>
+  <body>
+    <div id="game" style="border:1px dotted gray;"></div>
+    <script type="text/javascript" src="crafty-min.js"></script>
+    <script>
+      //构造启动界面。Crafty 使用 .c(compName, compProto) 构造一切 Component。Component 就像
+      //一块积木，只有特定的功能却又不能单独作为一件艺术品（酌情理解，实在不好描述）。Crafty 使用
+      //.e(compName) 构造 Entity（实体），实体是不同 Component 的聚合体，拥有各个 Component
+      //的功能。
+      //默认提供的 Component:
+      //2D Gravity DOM DebugCanvas DebugRectangle VisibleMBR DebugPolygon WiredHitBox SolidHitBox Tween Canvas Collision Mouse Draggable Keyboard Multiway Fourway Twoway Color Tint Image HTML Particles SpriteAnimation Sprite Text Delay TestSquare TestSquareWhite TestColor GLSprite WebGL
+      //根据文档理解吧
+      Crafty.c('StartUI', {
+        //每个实体初始化的时候都会调用这个方法。
+        init: function(){
+          //Crafty.viewport 暂时不是很清楚，看字面意思就好
+          var w = Crafty.viewport.width, h = Crafty.viewport.height, a = 96;
+          //当前 Component 需要的功能，类似于 Ext 中的 Mixin
+          this.requires('2D, Canvas, Image, Mouse');
+          //给属性赋值，不同的 Component 给属性赋值的方法也不一样
+          //2D - attr
+          //Image - image
+          //Gravity - gravity, gravityConst
+          //Color - color (这个是背景色)
+          this.attr({x: (w-a)/2, y: (h-a)/2, w: a, h: a});
+          this.image('play.png', 'no-repeat');
+          //每个实体都有事件绑定方法，bind, unbind, trigger
+          this.bind('Click', function(){
+            this.trigger('StartGame');
+          });
+          this.bind('MouseOver', function(){
+            this.image('play-hover.png', 'no-repeat');
+          });
+          this.bind('MouseOut', function(){
+            this.image('play.png', 'no-repeat');
+          })
+        }
+      });
+      //构造我的飞机
+      Crafty.c('MyPlane', {
+        init: function(){
+          this.requires('2D, Canvas, Draggable, Image, Collision');
+          this.image('plain.png', 'no-repeat');
+          this.attr({w: 40, h: 40});
+          this.bottom();
+          this._balls = {};
+          this.onHit('EnemyPlane', function() {
+            //自定义挂了事件，具体绑定在主程序中进行
+            this.trigger('Killed');
+          });
+        },
+        bottom: function(){
+          var x = (Crafty.viewport.width - this.w)/2;
+          var y = Crafty.viewport.height - this.h;
+          this.attr({x: x, y: y});
+        },
+        shoot: function(){
+          var ball = Crafty.e('Ball');
+          ball.attr({
+            x: this.x + (this.w - ball.w) / 2,
+            y: this.y - ball.h
+          });
+          this.ballSpeed && ball.gravityConst(this.ballSpeed);
+        },
+        //定时发射子弹
+        shooting: function(){
+          var me = this;
+          me._timer = setInterval(function(){
+            me.shoot();
+          }, 200);
+        },
+        stopShoot: function(){
+          clearInterval(this._timer);
+        }
+      });
+      //创建敌机
+      Crafty.c('EnemyPlane', {
+        init: function(){
+          var w = 32, tw = Crafty.viewport.width, x;
+          x = tw*Math.random();
+          if(x < 0) { x = 0; }
+          else if(x > (tw - w)) { x = tw - w; }
+          this.requires('2D, Canvas, Image, Gravity');
+          this.image('enemy.png', 'no-repeat');
+          this.attr({x: x, y: -1*w, w:w, h:w}).gravity(0.1).gravityConst(0.05);
+          this.bind('EnterFrame', function(){
+            var maxY = this.h + Crafty.viewport.h;
+            if(this.y >= maxY) {
+              this.destroy(); //当敌机已不再当前画面显示了，就销毁它
+            }
+          });
+        }
+      });
+      //子弹。这个是比较纠结的，之前用的是粒子 particles， 但是不好控制就放弃了
+      Crafty.c('Ball', {
+        init: function(){
+          this.requires('2D, Canvas, Image, Gravity, Collision');
+          this.attr({w:5,h:5});
+          this.image('ball.png', 'no-repeat');
+          this.gravity().gravityConst(-0.1);//重力默认向下，负值则向上
+          this.bind('EnterFrame', function(){
+            if(this.y <= -5) {
+              this.destroy();
+            }
+          });
+          //一旦子弹跟敌机发生碰撞。销毁敌机
+          this.onHit('EnemyPlane', function(e){
+            var i = 0, len = e.length;
+            for(;i<len;i++) {
+              e[i].obj.destroy();
+            }
+          });
+        }
+      });
+      //游戏结束画面
+      Crafty.c('EndUI', {
+        init: function(){
+          this.requires('2D, Canvas, Tint, Mouse, Color');
+          this.color('#888888');
+          this.tint('#99cc66', 0.5);//创建一个透明的层遮住当前画面
+          this.attr({x: 0, y: 0, z: 100, w: Crafty.viewport.width, h: Crafty.viewport.height});
+          this.showOthers();
+          this.bind('Click', function(){
+            var comps = Crafty.components();
+            this.destroy();
+            Crafty.stop(1);
+            Game.init();
+            for(k in comps) {
+              Crafty.c(k, comps[k]);
+            }
+            Game._play();
+          })
+        },
+        showOthers: function(){
+          var text, a = 32, me = this;
+          text = Crafty.e('2D, Canvas, Text');
+          text.attr({x: 36, y: 140, z: 101, w: 100, h: 20});
+          text.textColor('#FF0000');
+          text.textFont({size: '36px', family: '微软雅黑'});
+          text.text('亲，你挂了！');
+          me.bind('Remove', function(){
+            text.destroy();
+          });
+        }
+      });
+      var Game = {
+        _timer: null,
+        init: function(){
+          Crafty.init(272,400, document.getElementById('game'));
+        },
+        setEnemies: function(){
+          var me = this;
+          me._timer = setInterval(function(){
+            var em = Crafty.e('EnemyPlane');
+            me.difficultMode && em.gravityConst(me.difficultMode);
+          }, 250);
+        },
+        _play: function(){
+          var me = this;
+          me.self = Crafty.e('MyPlane');
+          me.self.shooting();
+          me.setEnemies();
+          //当我挂了，显示游戏结束画面
+          me.self.bind('Killed', function(){
+            clearInterval(me._timer);
+            me.self.stopShoot();
+            Crafty.e('EndUI');
+            Crafty.pause();
+          });
+        },
+        play: function(){
+          var me = this, ui = Crafty.e('StartUI');
+          ui.bind('StartGame', function(){
+            this.destroy();
+            me._play();
+          });
+        },
+        stop: function(){
+          clearInterval(this._timer);
+          this.self.stopShoot();
+          Crafty.pause();
+        },
+        pause: function(){
+          clearInterval(this._timer);
+          this.self.stopShoot();
+          Crafty.pause();
+        }
+      };
+      Game.init();
+      Game.play();
+      </script>
+      <p>子弹速度：<input type="range" max="100" min="1" value="10" onchange="Game.self.ballSpeed=(parseInt(this.value)/-100);"/></p>
+      <p>难度：<input type="range" max="100" min="1" value="10" onchange="Game.difficultMode=parseInt(this.value)/100;"/></p>
+  </body>
+</html>

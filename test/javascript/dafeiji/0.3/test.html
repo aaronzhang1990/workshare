@@ -1,0 +1,20 @@
+<!doctype html>
+<html>
+    <head>
+        <title>测试</title>
+        <meta charset="utf-8">
+        <script type="text/javascript" src="crafty-min.js"></script>
+        <script type="text/javascript" src="dafeiji.js"></script>
+        <script type="text/javascript">
+        onload = function(){
+            Crafty.init(500, 500, document.getElementById('t'));
+            var x = (500 - 5) / 2, y = 500 - 5;
+            Crafty.e('Ball').ball({x: x, y: y, w: 5, h: 5, enabled: false});
+            Crafty.e('SBall').attr({x: x, y: y, w: 5, h: 5}).S();
+        };
+        </script>
+    </head>
+    <body>
+        <div id="t" style="border:1px dotted gray;"></div>
+    </body>
+</html>
