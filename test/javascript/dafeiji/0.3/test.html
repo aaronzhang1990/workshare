@@ -8,9 +8,15 @@
         <script type="text/javascript">
         onload = function(){
             Crafty.init(500, 500, document.getElementById('t'));
-            var x = (500 - 5) / 2, y = 500 - 5;
-            Crafty.e('Ball').ball({x: x, y: y, w: 5, h: 5, enabled: false});
-            Crafty.e('SBall').attr({x: x, y: y, w: 5, h: 5}).S();
+            Crafty.scene('main', function(){
+                Crafty.background('#eeeeee');
+                var x = (500 - 5) / 2, y = 500 - 5;
+                //Crafty.e('Ball').ball({x: x, y: y, w: 5, h: 5});
+                Crafty.e('SBall').attr({x: x-20, y: y, w: 5, h: 5}).S();
+            });
+            Crafty.load(['ball.png', 'enemy.png', 'loading.gif', 'plain.png'], function(){
+                Crafty.scene('main');
+            });
         };
         </script>
     </head>
