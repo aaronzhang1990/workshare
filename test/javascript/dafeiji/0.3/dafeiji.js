@@ -17,10 +17,15 @@ var utils = {
 };
 Crafty.c('Ball', {
     _ball_defaults: {
+        w: 5,
+        h: 5,
         speed: 100,
         attack: 1,
-        img: 'ball.png'
+        img: 'ball.png',
+        enabled: true
     },
+    hitTarget: 'Enemy',
+    flyDir: 'n',
     init: function(){
         this.requires('2D, Canvas, Image');
         this.bind('EnterFrame', function(){
@@ -37,7 +42,7 @@ Crafty.c('Ball', {
         this.trigger('onAfterInit');
     },
     move2next: function(){
-        this.move('n', this.speed);
+        this.move(this.flyDir, this.speed);
     },
     ball: function(options){
         options = options || {};
@@ -53,9 +58,7 @@ Crafty.c('Ball', {
     },
     enable: function(){
         this.addComponent('Collision');
-        //TODO: remove next statement
-        return;
-        this.onHit('Enemy', function(nm){
+        this.onHit(this.hitTarget, function(nm){
             var a, b;
             for(a=0,b=nm.length;a<b;a++) {
                 this.owner.onFireEnemy(nm[i]);
@@ -198,7 +201,6 @@ Crafty.c('Enemy', {
     life: 1,
     speed: 100,
     attack: 1,
-    flyMode: 'linear',
     boss: false,
     init: function(){
         this.requires('2D, Canvas, Image, Collision');
@@ -216,52 +218,40 @@ Crafty.c('Enemy', {
     },
     go: function(){
         this.bind('EnterFrame', function(){
-            if(!this.boss && this.flyMode === 'linear') {
-                this.move2next();
-            }
-
+            this.move2next();
         });
-        if(!this.boss && this.flyMode === 'gravity') {
-            this.addComponent('Gravity').gravity().gravityConst(0.05);
-        }
     }
 });
 
-//最简单的敌人，只会匀速前行
+//敌人，匀速前行，速度一般
 Crafty.c('Enemy1', {
     init: function(){
         this.requires('Enemy');
         this.speed = 100;
-        this.flyMode = 'linear';
     }
 });
 
-//简单的敌人，只会匀速前行，速度更快
+//敌人，匀速前行，速度较快
 Crafty.c('Enemy2', {
     init: function(){
         this.requires('Enemy');
         this.speed = 200;
-        this.flyMode = 'linear';
     }
 });
 
-//稍微强大一点的敌人，加速飞行
+//敌人，匀速前行，速度快
 Crafty.c('Enemy3', {
     init: function(){
         this.requires('Enemy');
-        this.flyMode = 'gravity';
-        this.addComponent('Gravity');
-        this.gravityConst(0.05);
+        this.speed = 300;
     }
 });
 
-//稍微强大一点的敌人，加速飞行，加速度更大
+//敌人，匀速前行，速度飞快
 Crafty.c('Enemy4', {
     init: function(){
         this.requires('Enemy');
-        this.flyMode = 'gravity';
-        this.addComponent('Gravity');
-        this.gravityConst(0.1);
+        this.speed = 400;
     }
 });
 
@@ -270,5 +260,40 @@ Crafty.c('BOSS', {
     init: function(){
         this.requires('Enemy');
         this.boss = true;
+        this.speed = 150;
+        this.life = 100;
+        this._move_dir = "left";
+    },
+    fire: function(){
+        var me = this;
+        me._ball_timer = setInterval(function(){
+            var b = Crafty.e('Ball');
+            b.hitTarget = 'MyPlane';
+            b.flyDir = 's';
+            b.ball({
+                x: me.x + (me.w-b.w)/2,
+                y: me.y + me.h + 1
+            });
+        }, 300);
+    },
+    move2next: function(){
+        var x = this.x, y = this.y;
+        if(this._move_dir == "left") {
+            if(x <= 0) {
+                this._move_dir = "right";
+            } else {
+                this.attr({x: x - this.speed});
+            }
+            
+        } else if(this._move_dir == "right") {
+            if(x + this.w >= Crafty.viewport.width) {
+                this._move_dir = "left";
+            } else {
+                this.attr({x: x + this.speed});
+            }
+        }
+        if(y < 0) {
+            this.attr({y: y + 1});
+        }
     }
 })
