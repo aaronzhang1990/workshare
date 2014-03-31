@@ -54,16 +54,16 @@ Crafty.c('Ball', {
             this.enable();
         }
         this.speed = this.speed / Crafty.timer.FPS();
-        this.test();
     },
     enable: function(){
         this.addComponent('Collision');
         this.onHit(this.hitTarget, function(nm){
             var a, b;
             for(a=0,b=nm.length;a<b;a++) {
-                this.owner.onFireEnemy(nm[i]);
-                nm[a].hited(this.attack);
+                this.owner.onFireEnemy(nm[a].obj);
+                nm[a].obj.hited(this.attack);
             }
+            this.trigger('onBeforeDestroy');
             this.destroy();
         });
     },
@@ -72,7 +72,7 @@ Crafty.c('Ball', {
     },
     test: function(){
         this.bind('EnterFrame', function(){
-            console.log(this.getId(), this.x, this.y);
+            //console.log(this.getId(), this.x, this.y);
         })
     }
 });
@@ -110,20 +110,21 @@ Crafty.c('FunctionBall', {
             this.attr({x: xy[0], y: xy[1]});
         };
         this.ball();
+        return this;
     }
 });
 
 Crafty.c('SBall', {
-    _other_balls: [],
     init: function(){
-        var me = this, i, len, angles = [10, 20, -20, -10], ball;
-        this.requires('Ball');
+        var me = this, i, len, angles = [15, 30, -30, -15], ball;
+        me.requires('Ball');
+        me._other_balls = [];
         for(i=0,len=angles.length;i<=len;i++) {
             ball = Crafty.e('Ball, FunctionBall');
             ball.angle = angles[i];
-            this._other_balls.push(ball);
+            me._other_balls.push(ball);
         }
-        this.bind('EnterFrame', function(){
+        me.bind('EnterFrame', function(){
             var i, len, c = this._other_balls,
                 x = this.x, y = this.y, o = this._origin_pos,
                 x0, y0, r = Math.abs(o[1] - y);
@@ -133,15 +134,17 @@ Crafty.c('SBall', {
                 c[i].attr({x: x0, y: y0});
             }
         });
-        this.bind('onBeforeDestroy', function(){
+        me.bind('onBeforeDestroy', function(){
             var i, len, c = this._other_balls;
             for(i=0,len=c.length;i<len;i++) {
                 c[i].destroy();
             }
         });
     },
-    S: function(){
+    S: function(options){
         var i = 0, c = this._other_balls, len = c.length;
+        options = options || {};
+        utils.merge(this, options);
         for(;i<len;i++) {
             c[i].fx({
                 x: this.x,
@@ -149,11 +152,12 @@ Crafty.c('SBall', {
                 z: this.z,
                 w: this.w,
                 h: this.h,
-                func: function(){ return false; }
+                func: function(){ return false; },
+                owner: this.owner
             });
         }
         this._origin_pos = [this.x, this.y];
-        this.ball({speed: 250});
+        this.ball({speed: 200});
     }
 });
 
@@ -195,7 +199,55 @@ Crafty.c('Time', {
     }
 });
 
-Crafty.c('MyPlane', {});
+Crafty.c('MyPlane', {
+    life: 5,
+    hitTarget: 'Enemy',
+    ballName: 'SBall',
+    init: function(){
+        this.requires('2D, Canvas, Image, Collision, Draggable, Fourway');
+    },
+    fire: function(){
+        var me = this;
+        me.collision(new Crafty.polygon([20, 0], [40, 26], [20, 40], [0, 26]));
+        me.image('plain.png', 'no-repeat');
+        me.attr({x: (Crafty.viewport.width-40)/2, y: Crafty.viewport.height-40, w: 40, h: 40});
+        me.fourway(5);
+        me.onHit(me.hitTarget, function() {
+            //Crafty.scene('end');
+        });
+        this._shoot();
+    },
+    _shoot: function(){
+        var me = this, cb = function(){
+            var ball = Crafty.e(me.ballName), props;
+            ball.owner = me;
+            ball.hitTarget = "Enemy";
+            props = {
+                x: me.x+(me.w-5)/2,
+                y: me.y - 3,
+                w: 5,
+                h: 5
+            };
+            switch(me.ballName) {
+                case 'Ball':
+                    ball.ball(props);
+                    break;
+                case 'SBall':
+                    ball.S(props);
+                    break;
+            }
+        };
+        this._ball_timer = setInterval(cb, 200);
+    },
+    hited: function(num){
+        this.life -= num;
+        if(this.life <= 0) {
+            Crafty.e('GameOver');
+            Crafty.pause();
+        }
+    },
+    onFireEnemy: function(){}
+});
 
 Crafty.c('Enemy', {
     life: 1,
@@ -205,7 +257,7 @@ Crafty.c('Enemy', {
     init: function(){
         this.requires('2D, Canvas, Image, Collision');
         this.collision(new Crafty.polygon([[13, 0], [26, 17], [13, 26], [0, 17]]));
-        this.image(Crafty.asset('enemy.png'), "no-repeat");
+        this.image('enemy.png', "no-repeat");
     },
     move2next: function(){
         this.move('s', this.speed);
@@ -217,9 +269,18 @@ Crafty.c('Enemy', {
         }
     },
     go: function(){
+        this.speed = this.speed / Crafty.timer.FPS();
         this.bind('EnterFrame', function(){
+            var w = Crafty.viewport.width,
+                h = Crafty.viewport.height;
+            
             this.move2next();
+            if(!this.boss && !this.within(0, 0, w, h)) {
+                this.trigger('onBeforeDestroy');
+                this.destroy();
+            }
         });
+        return this;
     }
 });
 
@@ -258,9 +319,10 @@ Crafty.c('Enemy4', {
 
 Crafty.c('BOSS', {
     init: function(){
+        var mv = this.move2next;
         this.requires('Enemy');
+        this.move2next = mv;
         this.boss = true;
-        this.speed = 150;
         this.life = 100;
         this._move_dir = "left";
     },
@@ -274,6 +336,7 @@ Crafty.c('BOSS', {
                 x: me.x + (me.w-b.w)/2,
                 y: me.y + me.h + 1
             });
+            b.owner = me;
         }, 300);
     },
     move2next: function(){
@@ -282,18 +345,39 @@ Crafty.c('BOSS', {
             if(x <= 0) {
                 this._move_dir = "right";
             } else {
-                this.attr({x: x - this.speed});
+                this.attr({x: x - 2});
             }
             
         } else if(this._move_dir == "right") {
             if(x + this.w >= Crafty.viewport.width) {
                 this._move_dir = "left";
             } else {
-                this.attr({x: x + this.speed});
+                this.attr({x: x + 2});
             }
         }
         if(y < 0) {
             this.attr({y: y + 1});
         }
+    },
+    onFireEnemy: function(){}
+});
+
+Crafty.c('GameOver', {
+    init: function(){
+        this.requires('2D, Canvas, Tint, Color');
+        this.color('#786cd8').tint('#99cc66', 0.4);
+        this.attr({
+            x: 0,
+            y: 0,
+            w: Crafty.viewport.width,
+            h: Crafty.viewport.height
+        });
+        Crafty.e('2D, Canvas, Text').attr({
+            x: 100,
+            y: 200
+        }).text('game over!').textFont({
+            family: '微软雅黑',
+            size: '35px'
+        });
     }
-})
+});
