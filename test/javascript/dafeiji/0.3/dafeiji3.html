@@ -1,0 +1,155 @@
+<!doctype html>
+<html>
+    <head>
+        <title>打飞机</title>
+        <meta charset="utf-8">
+        <script type="text/javascript" src="crafty-min.js"></script>
+        <script type="text/javascript" src="dafeiji.js"></script>
+        <script type="text/javascript">
+         /*Crafty.scene('start', function(){
+            var w = Crafty.viewport.width, h = Crafty.viewport.height, a = 96;
+            Crafty.e('2D, Canvas, Color').attr({
+                x: 0, y: 0, w: w, h: h
+            }).color('#FFFFFF');
+            Crafty.e('2D, Canvas, Image, Mouse')
+                .areaMap([6, 1], [90, 44], [90, 52], [6, 95])
+                .attr({x: (w-a)/2, y: (h-a)/2, w: a, h: a})
+                .image('play.png', 'no-repeat')
+                .bind('Click', function(){
+                    Crafty.scene('loading');
+                })
+                .bind('MouseOver', function(){
+                    this.image('play-hover.png', 'no-repeat');
+                }).bind('MouseOut', function(){
+                    this.image('play.png', 'no-repeat');
+                });
+         });
+         
+         Crafty.scene('main', function(){
+            var me = Crafty.e('MyPlane, 2D, Canvas, Image, Collision, Draggable, Fourway'),
+                ballTimer, enemyTimer, score = 0,
+                createBall, createEnemy, startTimer, stopTimer;
+            me.collision(new Crafty.polygon([20, 0], [40, 26], [20, 40], [0, 26]));
+            me.image('plain.png', 'no-repeat');
+            me.attr({x: (Crafty.viewport.width-40)/2, y: Crafty.viewport.height-40, w: 40, h: 40});
+            me.fourway(2);
+            me.onHit('EnemyPlane', function() {
+                Crafty.scene('end');
+            });
+            function updateScore(){
+                var maxScore = Crafty.storage('score')||0;
+                if(score > maxScore) {
+                    Crafty.storage('score', score);
+                    document.getElementById('history_score').innerHTML = score + '';
+                }
+                document.getElementById('score').innerHTML = score + '';
+            };
+            createBall = function(){
+                var ball = Crafty.e('Ball, 2D, Canvas, Image, Tween, Collision');
+                ball.attr({w:5,h:5});
+                ball.image('ball.png', 'no-repeat');
+                ball.attr({
+                    x: me.x + (me.w - ball.w) / 2,
+                    y: me.y - ball.h
+                });
+                ball.tween({y: -1*ball.h}, window.ballSpeed||1500);
+                ball.bind('TweenEnd', function(){
+                    this.destroy();
+                });
+                ball.onHit('EnemyPlane', function(e){
+                    var i = 0, len = e.length;
+                    for(;i<len;i++) {
+                      e[i].obj.destroy();
+                      score += 100;
+                      updateScore();
+                    }
+                    this.destroy();
+                });
+            };
+            createEnemy = function(){
+                var nm = Crafty.e('EnemyPlane, 2D, Canvas, Image, Gravity, Collision'),
+                    w = 32, tw = Crafty.viewport.width, x;
+                x = tw*Math.random();
+                if(x < 0) { x = 0; }
+                else if(x > (tw - w)) { x = tw - w; }
+                nm.collision(new Crafty.polygon([[13, 0], [26, 17], [13, 26], [0, 17]]));
+                nm.image('enemy.png', 'no-repeat');
+                nm.attr({x: x, y: -1*w, w:w, h:w}).gravity(0.1).gravityConst(0.05);
+                nm.bind('EnterFrame', function(){
+                    var maxY = this.h + Crafty.viewport.h;
+                    if(this.y >= maxY) {
+                        this.destroy(); //当敌机已不再当前画面显示了，就销毁它
+                    }
+                });
+            };
+            startTimer = function(){
+                ballTimer = setInterval(createBall, 100);
+                enemyTimer = setInterval(createEnemy, 250);
+            };
+            stopTimer = function(){
+                clearInterval(ballTimer);
+                clearInterval(enemyTimer);
+            };
+            Crafty.bind('Pause', stopTimer);
+            Crafty.bind('Unpause', startTimer);
+            Crafty.bind('CraftyStop', stopTimer);
+            Crafty.bind('SceneDestroy', function(){
+                stopTimer();
+                Crafty.unbind('Pause', stopTimer);
+                Crafty.unbind('Unpause', startTimer);
+                Crafty.unbind('CraftyStop', stopTimer);
+                Crafty.unbind('SceneDestroy', arguments.callee);
+            });
+            updateScore();
+            startTimer();
+            document.getElementById('history_score').innerHTML = Crafty.storage('score') + '';
+         });
+         Crafty.scene('end', function(){
+            var layer = Crafty.e('2D, Canvas, Tint, Color'), text, icon, exit;
+            layer.color('#888888');
+            layer.tint('#99cc66', 0.5);
+            layer.attr({x: 0, y: 0, w: Crafty.viewport.width, h: Crafty.viewport.height});
+            text = Crafty.e('2D, Canvas, Text');
+            text.attr({x: 36, y: 140, w: 100, h: 20});
+            text.textColor('#FF0000');
+            text.textFont({size: '36px', family: '微软雅黑'});
+            text.text('亲，你挂了！');
+            icon = Crafty.e('2D, Canvas, Image, Mouse');
+            icon.image('refresh.png', 'no-repeat');
+            icon.attr({x: (Crafty.viewport.width-32)/2, y: 50, w: 32, h: 32});
+            icon.bind('Click', function(){
+                Crafty.scene('main');
+            });
+            icon.bind('MouseOver', function(){
+                this.image('refresh-hover.png', 'no-repeat');
+            });
+            icon.bind('MouseOut', function(){
+                icon.image('refresh.png', 'no-repeat');
+            });
+            exit = Crafty.e('2D, Canvas, Text, Mouse');
+            exit.attr({x: 100, y: 230, w: 100, h: 40});
+            exit.textColor('#000000');
+            exit.textFont({size: '20px', family: '微软雅黑'});
+            exit.text('退出游戏');
+            exit.bind('Click', function(){
+                Crafty.scene('start');
+            });
+            exit.bind('MouseOver', function(){
+                this.textFont({weight: 'bold'});
+            });
+            exit.bind('MouseOut', function(){
+                this.textFont({weight: 'normal'});
+            });
+         });*/
+         onload = function(){
+            Crafty.init(0,0, document.getElementById('t'));
+            Crafty.DOM.window._resize();
+            Crafty.scene('start');
+         };
+         
+        </script>
+    </head>
+    <body style="margin:0;padding:0;">
+        <div id="t" style="position:absolute;top:0px;bottom:0px;left:0px;right:0px;margin:0;padding:0;"></div>
+    </body>
+</html>

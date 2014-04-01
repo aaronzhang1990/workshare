@@ -199,6 +199,36 @@ Crafty.c('Time', {
     }
 });
 
+Crafty.c('ScoreBar', {
+    init: function(){
+        this.requires('2D, Canvas, Text');
+        this.prefix = "得分：";
+        this.textFont({
+            family: '微软雅黑',
+            size: '16px'
+        });
+    },
+    score: function(n){
+        var text = this.prefix + (n||0);
+        this.text(text);
+    }
+});
+
+Crafty.c('LifeBar', {
+    init: function(){
+        this.requires('2D, Canvas, Text');
+        this.prefix = "生命值：";
+        this.textFont({
+            family: '微软雅黑',
+            size: '16px'
+        });
+    },
+    life: function(n){
+        var text = this.prefix + (n||0);
+        this.text(text);
+    }
+});
+
 Crafty.c('MyPlane', {
     life: 5,
     hitTarget: 'Enemy',
@@ -212,10 +242,11 @@ Crafty.c('MyPlane', {
         me.image('plain.png', 'no-repeat');
         me.attr({x: (Crafty.viewport.width-40)/2, y: Crafty.viewport.height-40, w: 40, h: 40});
         me.fourway(5);
-        me.onHit(me.hitTarget, function() {
-            //Crafty.scene('end');
+        me.onHit(me.hitTarget, function(ens) {
+            this.hited(ens[0].obj.attack||1);
         });
         this._shoot();
+        return this;
     },
     _shoot: function(){
         var me = this, cb = function(){
@@ -245,8 +276,18 @@ Crafty.c('MyPlane', {
             Crafty.e('GameOver');
             Crafty.pause();
         }
+        Crafty('LifeBar').life(this.life);
     },
-    onFireEnemy: function(){}
+    onFireEnemy: function(enemy){
+        var score = enemy.level * 100, old;
+        old = Crafty.storage('score');
+        if(typeof old === "undefined") {
+            old = 0;
+        }
+        old += score;
+        Crafty.storage('score', old);
+        Crafty('ScoreBar').score(old);
+    }
 });
 
 Crafty.c('Enemy', {
@@ -265,6 +306,7 @@ Crafty.c('Enemy', {
     hited: function(n){
         this.life -= n;
         if(this.life <= 0) {
+            this.trigger('onBeforeDestroy');
             this.destroy();
         }
     },
@@ -289,6 +331,8 @@ Crafty.c('Enemy1', {
     init: function(){
         this.requires('Enemy');
         this.speed = 100;
+        this.life = 1;
+        this.level = 1;
     }
 });
 
@@ -296,7 +340,9 @@ Crafty.c('Enemy1', {
 Crafty.c('Enemy2', {
     init: function(){
         this.requires('Enemy');
-        this.speed = 200;
+        this.speed = 150;
+        this.life = 2;
+        this.level = 2;
     }
 });
 
@@ -304,7 +350,9 @@ Crafty.c('Enemy2', {
 Crafty.c('Enemy3', {
     init: function(){
         this.requires('Enemy');
-        this.speed = 300;
+        this.speed = 200;
+        this.life = 2;
+        this.level = 3
     }
 });
 
@@ -312,7 +360,9 @@ Crafty.c('Enemy3', {
 Crafty.c('Enemy4', {
     init: function(){
         this.requires('Enemy');
-        this.speed = 400;
+        this.speed = 250;
+        this.life = 4;
+        this.level = 4;
     }
 });
 
@@ -324,7 +374,13 @@ Crafty.c('BOSS', {
         this.move2next = mv;
         this.boss = true;
         this.life = 100;
+        this.level = 1;
         this._move_dir = "left";
+        this.bind('onBeforeDestroy', function(){
+            clearInterval(this._ball_timer);
+            Crafty.e('success');
+            Crafty.pause();
+        });
     },
     fire: function(){
         var me = this;
@@ -337,7 +393,7 @@ Crafty.c('BOSS', {
                 y: me.y + me.h + 1
             });
             b.owner = me;
-        }, 300);
+        }, 500);
     },
     move2next: function(){
         var x = this.x, y = this.y;
@@ -380,4 +436,114 @@ Crafty.c('GameOver', {
             size: '35px'
         });
     }
+});
+
+Crafty.c('success', {
+    init: function(){
+        this.requires('2D, Canvas, Tint, Color');
+        this.color('#786cd8').tint('#99cc66', 0.4);
+        this.attr({
+            x: 0,
+            y: 0,
+            w: Crafty.viewport.width,
+            h: Crafty.viewport.height
+        });
+        Crafty.e('2D, Canvas, Text').attr({
+            x: 100,
+            y: 200
+        }).text('哇塞，你竟然通关了！').textFont({
+            family: '微软雅黑',
+            size: '35px'
+        });
+        Crafty.e('2D, Canvas, Text').attr({
+            x: 100,
+            y: 250
+        }).text('你可知道 BOSS 是拥有 100 条生命的？').textFont({
+            family: '微软雅黑',
+            size: '35px'
+        }).textColor('#FF0000');
+    }
+});
+
+Crafty.scene('start', function(){
+    var w = Crafty.viewport.width, h = Crafty.viewport.height, a = 96;
+    Crafty.e('2D, Canvas, Color').attr({
+        x: 0, y: 0, w: w, h: h
+    }).color('#FFFFFF');
+    Crafty.e('2D, Canvas, Image, Mouse')
+        .areaMap([6, 1], [90, 44], [90, 52], [6, 95])
+        .attr({x: (w-a)/2, y: (h-a)/2, w: a, h: a})
+        .image('play.png', 'no-repeat')
+        .bind('Click', function(){
+            Crafty.scene('loading');
+        })
+        .bind('MouseOver', function(){
+            this.image('play-hover.png', 'no-repeat');
+        }).bind('MouseOut', function(){
+            this.image('play.png', 'no-repeat');
+        });
+    Crafty.e('2D, Canvas, Text')
+        .text('点击按钮开始游戏')
+        .textFont({
+            family: '微软雅黑',
+            size: '32px'
+        }).attr({
+            y: h / 2 + 100,
+            x: (w - 32 * 8) / 2,
+            w: 32 * 8,
+            h: 40
+        })
+ });
+
+Crafty.scene('loading', function(){
+    var w = Crafty.viewport.width,
+        h = Crafty.viewport.height,
+        tips = [
+            '小贴士：除了BOSS有4种敌人哦',
+            '小贴士：速度越快的敌人生命值越高',
+            '小贴士：速度越快的敌人击毁后得分越高'
+        ];
+    Crafty.e('2D, Canvas, Color')
+        .attr({x:0,y:0,w:w,h:h})
+        .color('#000000');
+    Crafty.e('2D, Canvas, Text')
+        .attr({x: 90, y: 190, w: 100, h: 20})
+        .textColor('#FFFFFF')
+        .textFont({size: '20px', family: '微软雅黑'})
+        .text('正在加载 ...');
+    Crafty.e('2D, Image')
+        .attr({w: 20, h: 20, x: (w-20)/2, y: h-30})
+        .image('loading.gif', 'no-repeat');
+    Crafty.e('2D, Canvas, Text')
+        .attr({x: 50, y: 100})
+        .textColor('#F7C777')
+        .textFont({size: '16px', family: '微软雅黑'})
+        .text(tips[Math.floor(Math.random()*3)])
+    Crafty.load(['ball.png', 'enemy.png', 'loading.gif', 'plain.png'], function(){
+        setTimeout(function(){ Crafty.scene('main'); }, 1000);
+    });
+});
+
+Crafty.scene('main', function(){
+    var w = Crafty.viewport.width,
+        h = Crafty.viewport.height,
+        player, createEnemy, scorebar, lifebar, enemyTimer;
+    Crafty.storage('score', 0);
+    player = Crafty.e('MyPlane').attr({x: (w-40)/2, y: h-40}).fire();
+    scorebar = Crafty.e('ScoreBar').attr({x: 10, y: 10}).score();
+    lifebar = Crafty.e('LifeBar').attr({x: 10, y: 30}).life(player.life);
+    createEnemy = function(){
+        var i = Math.floor(Math.random() * 5) || 1, enm, x, y = -32;
+        x = Math.random() * Crafty.viewport.width;
+        if(x + 32 > Crafty.viewport.width) {
+            x = Crafty.viewport.width - 32;
+        }
+        enm = Crafty.e('Enemy'+i).attr({x: x});
+        enm.go();
+        if(Crafty.storage('score') >= 10000) {
+            Crafty.e('BOSS').go().fire();
+            clearInterval(enemyTimer);
+        }
+    };
+    enemyTimer = setInterval(createEnemy, 200);
 });
